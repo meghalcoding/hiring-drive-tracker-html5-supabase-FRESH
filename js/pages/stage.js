@@ -16,7 +16,7 @@ export function renderStage(root, stage) {
           </h1>
         </div>
         <div id="reception-form-slot"></div>
-        <div id="queue-slot"></div>
+        <div class="card"><div id="queue-slot"></div></div>
       </div>
       <div>
         <div class="card sticky-panel">

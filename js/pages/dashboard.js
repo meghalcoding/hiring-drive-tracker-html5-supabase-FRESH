@@ -5,8 +5,7 @@ import {
 } from "../lib.js";
 
 const TOUCHPOINT_STAGES = FUNNEL_STAGES.filter((s) => s !== "reception" && s !== "completed");
-const PIE_COLORS = { Selected: "#16a34a", Rejected: "#6b7280", "In Progress": "#2563eb" };
-
+const PIE_COLORS = { Selected: "#059669", Rejected: "#6B7280", "In Progress": "#3B82F6" };
 export function renderDashboard(root) {
   root.innerHTML = `
     <div class="stack">
@@ -208,8 +207,8 @@ export function renderDashboard(root) {
       type: "bar",
       data: {
         labels: funnelData.map((d) => d.stage),
-        datasets: [{ label: "Candidates", data: funnelData.map((d) => d.count), backgroundColor: "#1e3a8a", borderRadius: 4 }],
-      },
+        datasets: [{ label: "Candidates", data: funnelData.map((d) => d.count), backgroundColor: "#3B82F6", borderRadius: 6 }],
+       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false } },
@@ -230,8 +229,8 @@ export function renderDashboard(root) {
       type: "bar",
       data: {
         labels: hourlyData.map((d) => d.hour),
-        datasets: [{ label: "Registrations", data: hourlyData.map((d) => d.count), backgroundColor: "#2563eb", borderRadius: 4 }],
-      },
+        datasets: [{ label: "Registrations", data: hourlyData.map((d) => d.count), backgroundColor: "#F59E0B", borderRadius: 6 }],
+       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false } },
