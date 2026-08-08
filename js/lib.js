@@ -136,6 +136,10 @@ export function alertBadgeHtml(kind, label) {
   return `<span class="badge-alert badge-${kind}">${escapeHtml(label)}</span>`;
 }
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> c6cbfa08bc05a4e918a57f2575e205539661f829
 export function isHrScreeningActive(c) {
   return c.stage === "hr_screening" && !!c.hr_started_at && !c.hr_completed_at;
 }

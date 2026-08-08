@@ -31,7 +31,10 @@ export function renderVolunteer(root) {
 
   function deskCard(stage, queue, settings) {
     const label = stage === "loi" ? "LOI Stage" : undefined;
+<<<<<<< HEAD
+=======
 
+>>>>>>> c6cbfa08bc05a4e918a57f2575e205539661f829
     const items = queue.length
       ? `<ul class="queue-list">${queue
           .map(
@@ -101,17 +104,26 @@ export function renderVolunteer(root) {
     }
 
     const deskCols = VOLUNTEER_STAGES.map((stage) =>
+<<<<<<< HEAD
+      deskCard(stage, candidates.filter((c) => c.stage === stage), settings)
+=======
       deskCard(
         stage,
         candidates.filter((c) => c.stage === stage),
         settings
       )
+>>>>>>> c6cbfa08bc05a4e918a57f2575e205539661f829
     ).join("");
 
     const completed = candidates.filter((c) => c.stage === "completed");
     const rejected = candidates.filter((c) => c.stage === "rejected");
 
     const outcomeCols =
+<<<<<<< HEAD
+      outcomeCard("Offer Received", "bg-completed", completed, "completed_at", (c) => `Offer completed · ${c.position_applied}`) +
+      outcomeCard("Rejected / Declined", "bg-rejected", rejected, "updated_at", (c) =>
+        c.rejection_reason ? `Reason: ${c.rejection_reason}` : "No reason logged"
+=======
       outcomeCard(
         "Offer Received",
         "bg-completed",
@@ -128,15 +140,20 @@ export function renderVolunteer(root) {
           c.rejection_reason
             ? `Reason: ${c.rejection_reason}`
             : "No reason logged"
+>>>>>>> c6cbfa08bc05a4e918a57f2575e205539661f829
       );
 
     const infoCols =
       infoCard("WA1", volunteerNameForSlot(5, settings), "Seated desk") +
+<<<<<<< HEAD
+      infoCard("Floating", volunteerNameForSlot(6, settings), "Relieving duties on the floor");
+=======
       infoCard(
         "Floating",
         volunteerNameForSlot(6, settings),
         "Relieving duties on the floor"
       );
+>>>>>>> c6cbfa08bc05a4e918a57f2575e205539661f829
 
     body.innerHTML = `
       <div class="volunteer-grid">${deskCols}${outcomeCols}${infoCols}</div>
