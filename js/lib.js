@@ -142,10 +142,20 @@ export function isHoldDecision(c) {
   return c.stage === "loi" && c.interview_recommendation === "hold";
 }
 
+export function isHrScreeningActive(c) {
+  return c.stage === "hr_screening" && !!c.hr_started_at && !c.hr_completed_at;
+}
+
+export function isCabinInterviewActive(c) {
+  return ["cabin_1", "cabin_2", "cabin_3", "cabin_4"].includes(c.stage) && !!c.cabin_started_at && !c.cabin_completed_at;
+}
+
 // Mirrors statusBadgeFor() from src/pages/Dashboard.tsx
 export function statusBadgeFor(c, thresholds) {
   if (c.stage === "completed") return alertBadgeHtml("completed", "Completed");
   if (isHoldDecision(c)) return alertBadgeHtml("hold", "Hold — Cabin decision");
+  if (isHrScreeningActive(c)) return alertBadgeHtml("active-hr", "HR SCREENING ACTIVE");
+  if (isCabinInterviewActive(c)) return alertBadgeHtml("active-cabin", "CABIN INTERVIEW ACTIVE");
   if (c.stage === "reception" && (!c.resume_received || !c.registration_complete)) {
     return alertBadgeHtml("incomplete", "Incomplete fields");
   }
@@ -158,7 +168,7 @@ export function statusBadgeFor(c, thresholds) {
     if (elapsed > thresholds.interview_duration_threshold_minutes)
       return alertBadgeHtml("interview", `In cabin ${elapsed}m`);
   }
-  return alertBadgeHtml("ok", "On track");
+  return alertBadgeHtml("transit", "In transit or waiting");
 }
 
 // ---- Export helpers (mirrors src/lib/export.ts, uses global XLSX from CDN) ----
