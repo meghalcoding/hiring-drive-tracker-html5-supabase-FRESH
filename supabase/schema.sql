@@ -215,6 +215,15 @@ create table public.settings (
   hr_wait_threshold_minutes int not null default 15,
   interview_duration_threshold_minutes int not null default 20,
   event_name text not null default 'Walk-In Hiring Drive',
+  -- Volunteer name assignments shown on the public Volunteer screen.
+  -- V1 Reception, V2 HR Screening & LOI Stage, V3 Cabin 1&2, V4 Cabin 3&4,
+  -- V5 seated at WA1, V6 floating/relief duty. Left blank -> screen shows "V1".."V6".
+  v1_name text,
+  v2_name text,
+  v3_name text,
+  v4_name text,
+  v5_name text,
+  v6_name text,
   updated_at timestamptz not null default now(),
   updated_by uuid references public.profiles(id)
 );

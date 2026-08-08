@@ -9,6 +9,7 @@ export function renderAdmin(root) {
       <div id="admin-table-slot"></div>
       <div id="admin-export-slot"></div>
       <div id="admin-settings-slot"></div>
+      <div id="admin-volunteers-slot"></div>
       <div id="admin-roster-slot"></div>
       <div id="admin-reset-slot"></div>
     </div>
@@ -17,6 +18,7 @@ export function renderAdmin(root) {
   const tableSlot = document.getElementById("admin-table-slot");
   const exportSlot = document.getElementById("admin-export-slot");
   const settingsSlot = document.getElementById("admin-settings-slot");
+  const volunteersSlot = document.getElementById("admin-volunteers-slot");
   const rosterSlot = document.getElementById("admin-roster-slot");
   const resetSlot = document.getElementById("admin-reset-slot");
 
@@ -143,6 +145,56 @@ export function renderAdmin(root) {
     });
   }
 
+  const VOLUNTEER_SLOT_DESC = {
+    1: "Reception",
+    2: "HR Screening & LOI Stage",
+    3: "Cabin 1 & 2",
+    4: "Cabin 3 & 4",
+    5: "WA1 (seated desk)",
+    6: "Floating (relief duty)",
+  };
+
+  function drawVolunteers() {
+    const { settings } = settingsStore.get();
+
+    volunteersSlot.innerHTML = `
+      <section class="card">
+        <h2 class="section-title">Volunteer Assignments</h2>
+        <p class="small muted">Assign a name to each volunteer slot. Leave blank to show the default V1, V2… label on the Volunteer screen.</p>
+        <div style="display:grid; grid-template-columns:1fr; gap:1rem; margin-top:.75rem;" id="vol-grid">
+          ${[1, 2, 3, 4, 5, 6]
+            .map(
+              (n) => `
+              <div>
+                <label class="field-label">V${n} — ${escapeHtml(VOLUNTEER_SLOT_DESC[n])}</label>
+                <input class="input" id="vol-v${n}" placeholder="V${n}" value="${escapeHtml((settings && settings[`v${n}_name`]) || "")}" />
+              </div>`
+            )
+            .join("")}
+        </div>
+        <style>@media (min-width:640px){#vol-grid{grid-template-columns:1fr 1fr;}} @media (min-width:1024px){#vol-grid{grid-template-columns:1fr 1fr 1fr;}}</style>
+        <button id="vol-save" class="btn btn-primary" style="margin-top:.75rem;">Save Volunteer Names</button>
+        <span id="vol-saved" class="small hidden" style="margin-left:.75rem; color:#16a34a;">Saved.</span>
+      </section>`;
+
+    document.getElementById("vol-save").addEventListener("click", async () => {
+      const btn = document.getElementById("vol-save");
+      const savedEl = document.getElementById("vol-saved");
+      savedEl.classList.add("hidden");
+      btn.disabled = true;
+      btn.textContent = "Saving…";
+      const patch = {};
+      [1, 2, 3, 4, 5, 6].forEach((n) => {
+        patch[`v${n}_name`] = document.getElementById(`vol-v${n}`).value.trim() || null;
+      });
+      const { error } = await supabase.from("settings").update(patch).eq("id", 1);
+      btn.disabled = false;
+      btn.textContent = "Save Volunteer Names";
+      if (!error) savedEl.classList.remove("hidden");
+      else alert(error.message);
+    });
+  }
+
   async function drawRoster() {
     rosterSlot.innerHTML = `
       <section class="card">
@@ -250,6 +302,7 @@ export function renderAdmin(root) {
   drawTable();
   drawExport();
   drawSettings();
+  drawVolunteers();
   drawRoster();
   drawReset();
 
@@ -257,7 +310,10 @@ export function renderAdmin(root) {
     drawTable();
     drawExport();
   });
-  const unsub2 = settingsStore.subscribe(drawSettings);
+  const unsub2 = settingsStore.subscribe(() => {
+    drawSettings();
+    drawVolunteers();
+  });
 
   return () => {
     unsub1();

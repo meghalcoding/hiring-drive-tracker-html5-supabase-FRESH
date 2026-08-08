@@ -1,6 +1,6 @@
 import { supabase } from "../supabaseClient.js";
 import { authStore, candidatesStore, settingsStore } from "../store.js";
-import { STAGE_LABELS, stageBadgeHtml, statusBadgeFor, formatTime, formatDateTime, escapeHtml } from "../lib.js";
+import { STAGE_LABELS, stageBadgeHtml, statusBadgeFor, formatTime, formatDateTime, escapeHtml, isHoldDecision } from "../lib.js";
 
 const HR_NAMES = ["Rushi", "Nirali"];
 
@@ -80,11 +80,12 @@ export function renderStage(root, stage) {
         ${queue
           .map(
             (c) => `
-            <li class="queue-item ${selected && selected.id === c.id ? "selected" : ""}" data-id="${c.id}">
+            <li class="queue-item ${selected && selected.id === c.id ? "selected" : ""} ${isHoldDecision(c) ? "hold-flag" : ""}" data-id="${c.id}">
               <div class="row-between">
                 <div>
                   <p class="queue-item-name">${escapeHtml(c.full_name)}<span class="queue-item-code">${escapeHtml(c.candidate_code)}</span></p>
                   <p class="queue-item-meta">${escapeHtml(c.position_applied)} · ${escapeHtml(c.phone)} · Registered ${formatTime(c.registered_at)}</p>
+                  ${isHoldDecision(c) ? `<p class="small" style="color:#92400e; font-weight:600; margin:.2rem 0 0;">⏸ On hold — Cabin ${c.cabin_number ?? ""} manager marked this candidate "Hold" before sending to LOI.</p>` : ""}
                 </div>
                 ${statusBadgeFor(c, settings)}
               </div>
@@ -115,18 +116,17 @@ export function renderStage(root, stage) {
   }
 
   function drawLog() {
-    if (stage === "reception") {
-      logSlot.innerHTML = "";
-      return;
-    }
     const { candidates } = candidatesStore.get();
     const rows = buildLog(stage, candidates);
+    const title = stage === "reception" ? "All Registered Candidates" : `Recent Decisions from ${STAGE_LABELS[stage]}`;
+    const emptyText =
+      stage === "reception" ? "No candidates registered yet." : "No decisions recorded yet from this desk.";
     logSlot.innerHTML = `
       <div class="card" style="margin-top:2rem;">
-        <h2 class="section-title">Recent Decisions from ${STAGE_LABELS[stage]} <span class="muted" style="font-weight:400;">(${rows.length})</span></h2>
+        <h2 class="section-title">${title} <span class="muted" style="font-weight:400;">(${rows.length})</span></h2>
         ${
           rows.length === 0
-            ? '<p class="muted small" style="margin-top:.75rem;">No decisions recorded yet from this desk.</p>'
+            ? `<p class="muted small" style="margin-top:.75rem;">${emptyText}</p>`
             : `<div style="margin-top:.75rem;">
                 ${rows
                   .map(
@@ -171,7 +171,17 @@ export function renderStage(root, stage) {
 
 function buildLog(stage, candidates) {
   let rows = [];
-  if (stage === "hr_screening") {
+  if (stage === "reception") {
+    // Full registration log for the receptionist to track every candidate signed in,
+    // regardless of which stage they've since moved to.
+    rows = candidates.map((c) => ({
+      candidate: c,
+      when: c.registered_at,
+      destination: c.stage,
+      feedback: null,
+      extra: `Applied for ${c.position_applied}`,
+    }));
+  } else if (stage === "hr_screening") {
     rows = candidates
       .filter((c) => c.hr_completed_at || c.rejected_at_stage === "hr_screening")
       .map((c) => ({
@@ -202,7 +212,9 @@ function buildLog(stage, candidates) {
         extra: `LOI issued · Aadhaar received · Exit ${formatDateTime(c.exit_time)}`,
       }));
   }
-  return rows.sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime()).slice(0, 25);
+  return rows
+    .sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime())
+    .slice(0, stage === "reception" ? 500 : 25);
 }
 
 // ---- Reception: registration form (mirrors src/components/ReceptionForm.tsx) ----

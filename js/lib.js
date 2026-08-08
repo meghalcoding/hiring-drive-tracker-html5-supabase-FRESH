@@ -54,6 +54,32 @@ export const VOLUNTEER_STAGES = [
   "reception", "hr_screening", "cabin_1", "cabin_2", "cabin_3", "cabin_4", "loi",
 ];
 
+// Which volunteer slot (V1-V4) mans each stage's desk. V2 covers both
+// HR Screening and the LOI desk; V3 covers Cabin 1 & 2; V4 covers Cabin 3 & 4.
+export const VOLUNTEER_SLOTS = {
+  reception: 1,
+  hr_screening: 2,
+  cabin_1: 3,
+  cabin_2: 3,
+  cabin_3: 4,
+  cabin_4: 4,
+  loi: 2,
+};
+
+// Returns the assigned volunteer's name for a stage, or falls back to "V1".."V4".
+export function volunteerNameFor(stage, settings) {
+  const slot = VOLUNTEER_SLOTS[stage];
+  if (!slot) return "";
+  const name = settings ? settings[`v${slot}_name`] : null;
+  return (name && String(name).trim()) || `V${slot}`;
+}
+
+// Same fallback logic for the standalone V5 (WA1) / V6 (floating) slots.
+export function volunteerNameForSlot(slot, settings) {
+  const name = settings ? settings[`v${slot}_name`] : null;
+  return (name && String(name).trim()) || `V${slot}`;
+}
+
 // ---- Time helpers (mirrors src/lib/time.ts) ----
 
 export function minutesSince(iso) {
@@ -102,17 +128,24 @@ export function escapeHtml(str) {
     .replace(/'/g, "&#39;");
 }
 
-export function stageBadgeHtml(stage) {
-  return `<span class="badge-stage ${STAGE_COLOR_CLASS[stage] || ""}">${STAGE_LABELS[stage] || stage}</span>`;
+export function stageBadgeHtml(stage, labelOverride) {
+  return `<span class="badge-stage ${STAGE_COLOR_CLASS[stage] || ""}">${labelOverride || STAGE_LABELS[stage] || stage}</span>`;
 }
 
 export function alertBadgeHtml(kind, label) {
   return `<span class="badge-alert badge-${kind}">${escapeHtml(label)}</span>`;
 }
 
+// True when a Cabin manager sent this candidate to LOI with a "Hold" recommendation
+// (as opposed to a straight "Select"). Used to visually flag hold decisions at LOI.
+export function isHoldDecision(c) {
+  return c.stage === "loi" && c.interview_recommendation === "hold";
+}
+
 // Mirrors statusBadgeFor() from src/pages/Dashboard.tsx
 export function statusBadgeFor(c, thresholds) {
   if (c.stage === "completed") return alertBadgeHtml("completed", "Completed");
+  if (isHoldDecision(c)) return alertBadgeHtml("hold", "Hold — Cabin decision");
   if (c.stage === "reception" && (!c.resume_received || !c.registration_complete)) {
     return alertBadgeHtml("incomplete", "Incomplete fields");
   }
