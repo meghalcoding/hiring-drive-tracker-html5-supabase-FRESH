@@ -6,6 +6,8 @@ import {
   formatTime,
   escapeHtml,
   isHoldDecision,
+  isHrScreeningActive,
+  isCabinInterviewActive,
   volunteerNameFor,
   volunteerNameForSlot,
 } from "../lib.js";
@@ -27,13 +29,19 @@ export function renderVolunteer(root) {
 
   const body = document.getElementById("volunteer-body");
 
+  function activeKindFor(candidate) {
+    if (isHrScreeningActive(candidate)) return "hr";
+    if (isCabinInterviewActive(candidate)) return "cabin";
+    return null;
+  }
+
   function deskCard(stage, queue, settings) {
     const label = stage === "loi" ? "LOI Stage" : undefined;
     const items = queue.length
       ? `<ul class="queue-list">${queue
           .map(
             (c) => `
-              <li class="queue-item ${isHoldDecision(c) ? "hold-flag" : ""}" style="cursor:default;">
+              <li class="queue-item ${isHoldDecision(c) ? "hold-flag" : ""} ${activeKindFor(c) ? `active-${activeKindFor(c)}` : ""}" style="cursor:default;">
                 <p class="queue-item-name">${escapeHtml(c.full_name)}</p>
                 <p class="queue-item-meta">${escapeHtml(c.candidate_code)} · ${formatTime(c.registered_at)}</p>
                 <div style="margin-top:.25rem;">${statusBadgeFor(c, settings)}</div>
