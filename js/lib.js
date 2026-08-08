@@ -161,4 +161,86 @@ export function activeFlagClass(c) {
   return "";
 }
 
-// Mirrors statusBadgeFor() from
+// Mirrors statusBadgeFor() from src/pages/Dashboard.tsx
+export function statusBadgeFor(c, thresholds) {
+  if (c.stage === "completed") return alertBadgeHtml("completed", "Completed");
+  if (isHoldDecision(c)) return alertBadgeHtml("hold", "Hold — Cabin decision");
+  if (c.stage === "reception" && (!c.resume_received || !c.registration_complete)) {
+    return alertBadgeHtml("incomplete", "Incomplete fields");
+  }
+  if (isHrScreeningActive(c)) return alertBadgeHtml("hr-active", "HR SCREENING ACTIVE");
+  if (c.stage === "hr_screening" && !c.hr_started_at && thresholds) {
+    const waited = minutesSince(c.registered_at) ?? 0;
+    if (waited > thresholds.hr_wait_threshold_minutes) return alertBadgeHtml("waiting", `Waiting ${waited}m`);
+  }
+  if (isCabinInterviewActive(c)) {
+    if (thresholds) {
+      const elapsed = minutesSince(c.cabin_started_at) ?? 0;
+      if (elapsed > thresholds.interview_duration_threshold_minutes)
+        return alertBadgeHtml("interview", `CABIN INTERVIEW ACTIVE · ${elapsed}m`);
+    }
+    return alertBadgeHtml("cabin-active", "CABIN INTERVIEW ACTIVE");
+  }
+  return alertBadgeHtml("ok", "In Transit / Waiting");
+}
+
+// ---- Export helpers (mirrors src/lib/export.ts, uses global XLSX from CDN) ----
+
+function toRow(c) {
+  return {
+    "Candidate Code": c.candidate_code,
+    "Full Name": c.full_name,
+    Phone: c.phone,
+    Email: c.email ?? "",
+    "Position Applied": c.position_applied,
+    "Experience (yrs)": c.experience_years,
+    Stage: STAGE_LABELS[c.stage] || c.stage,
+    "Resume Received": c.resume_received ? "Yes" : "No",
+    "Registration Complete": c.registration_complete ? "Yes" : "No",
+    "HR Feedback": c.hr_feedback ?? "",
+    "HR Interviewer": c.hr_interviewer ?? "",
+    "HR Started": c.hr_started_at ?? "",
+    "HR Completed": c.hr_completed_at ?? "",
+    "Cabin Number": c.cabin_number ?? "",
+    "Cabin Started": c.cabin_started_at ?? "",
+    "Cabin Completed": c.cabin_completed_at ?? "",
+    "Interview Rating": c.interview_rating ?? "",
+    "Interview Recommendation": c.interview_recommendation ?? "",
+    "Interview Comments": c.interview_comments ?? "",
+    "LOI Issued": c.loi_issued ? "Yes" : "No",
+    "Aadhaar Received": c.aadhaar_received ? "Yes" : "No",
+    "Exit Time": c.exit_time ?? "",
+    "Rejected At Stage": c.rejected_at_stage ? (STAGE_LABELS[c.rejected_at_stage] || c.rejected_at_stage) : "",
+    "Rejection Reason": c.rejection_reason ?? "",
+    "Registered At": c.registered_at,
+    "Completed At": c.completed_at ?? "",
+  };
+}
+
+function filename(ext) {
+  const ts = new Date().toISOString().replace(/[:.]/g, "-");
+  return `candidates-export-${ts}.${ext}`;
+}
+
+export function exportToXlsx(candidates) {
+  const rows = candidates.map(toRow);
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Candidates");
+  XLSX.writeFile(wb, filename("xlsx"));
+}
+
+export function exportToCsv(candidates) {
+  const rows = candidates.map(toRow);
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const csv = XLSX.utils.sheet_to_csv(ws);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename("csv");
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
