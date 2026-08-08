@@ -6,6 +6,8 @@ import {
   formatTime,
   escapeHtml,
   isHoldDecision,
+  isHrScreeningActive,
+  isCabinInterviewActive,
   volunteerNameFor,
   volunteerNameForSlot,
 } from "../lib.js";
@@ -29,11 +31,12 @@ export function renderVolunteer(root) {
 
   function deskCard(stage, queue, settings) {
     const label = stage === "loi" ? "LOI Stage" : undefined;
+
     const items = queue.length
       ? `<ul class="queue-list">${queue
           .map(
             (c) => `
-              <li class="queue-item ${isHoldDecision(c) ? "hold-flag" : ""}" style="cursor:default;">
+              <li class="queue-item ${isHoldDecision(c) ? "hold-flag" : ""} ${isHrScreeningActive(c) ? "hr-active-flag" : ""} ${isCabinInterviewActive(c) ? "cabin-active-flag" : ""}" style="cursor:default;">
                 <p class="queue-item-name">${escapeHtml(c.full_name)}</p>
                 <p class="queue-item-meta">${escapeHtml(c.candidate_code)} · ${formatTime(c.registered_at)}</p>
                 <div style="margin-top:.25rem;">${statusBadgeFor(c, settings)}</div>
@@ -98,21 +101,42 @@ export function renderVolunteer(root) {
     }
 
     const deskCols = VOLUNTEER_STAGES.map((stage) =>
-      deskCard(stage, candidates.filter((c) => c.stage === stage), settings)
+      deskCard(
+        stage,
+        candidates.filter((c) => c.stage === stage),
+        settings
+      )
     ).join("");
 
     const completed = candidates.filter((c) => c.stage === "completed");
     const rejected = candidates.filter((c) => c.stage === "rejected");
 
     const outcomeCols =
-      outcomeCard("Offer Received", "bg-completed", completed, "completed_at", (c) => `Offer completed · ${c.position_applied}`) +
-      outcomeCard("Rejected / Declined", "bg-rejected", rejected, "updated_at", (c) =>
-        c.rejection_reason ? `Reason: ${c.rejection_reason}` : "No reason logged"
+      outcomeCard(
+        "Offer Received",
+        "bg-completed",
+        completed,
+        "completed_at",
+        (c) => `Offer completed · ${c.position_applied}`
+      ) +
+      outcomeCard(
+        "Rejected / Declined",
+        "bg-rejected",
+        rejected,
+        "updated_at",
+        (c) =>
+          c.rejection_reason
+            ? `Reason: ${c.rejection_reason}`
+            : "No reason logged"
       );
 
     const infoCols =
       infoCard("WA1", volunteerNameForSlot(5, settings), "Seated desk") +
-      infoCard("Floating", volunteerNameForSlot(6, settings), "Relieving duties on the floor");
+      infoCard(
+        "Floating",
+        volunteerNameForSlot(6, settings),
+        "Relieving duties on the floor"
+      );
 
     body.innerHTML = `
       <div class="volunteer-grid">${deskCols}${outcomeCols}${infoCols}</div>

@@ -136,6 +136,18 @@ export function alertBadgeHtml(kind, label) {
   return `<span class="badge-alert badge-${kind}">${escapeHtml(label)}</span>`;
 }
 
+export function isHrScreeningActive(c) {
+  return c.stage === "hr_screening" && !!c.hr_started_at && !c.hr_completed_at;
+}
+
+export function isCabinInterviewActive(c) {
+  return (
+    ["cabin_1", "cabin_2", "cabin_3", "cabin_4"].includes(c.stage) &&
+    !!c.cabin_started_at &&
+    !c.cabin_completed_at
+  );
+}
+
 // True when a Cabin manager sent this candidate to LOI with a "Hold" recommendation
 // (as opposed to a straight "Select"). Used to visually flag hold decisions at LOI.
 export function isHoldDecision(c) {
@@ -149,6 +161,8 @@ export function statusBadgeFor(c, thresholds) {
   if (c.stage === "reception" && (!c.resume_received || !c.registration_complete)) {
     return alertBadgeHtml("incomplete", "Incomplete fields");
   }
+  if (isHrScreeningActive(c)) return alertBadgeHtml("hr-active", "HR SCREENING ACTIVE");
+  if (isCabinInterviewActive(c)) return alertBadgeHtml("cabin-active", "CABIN INTERVIEW ACTIVE");
   if (c.stage === "hr_screening" && !c.hr_started_at && thresholds) {
     const waited = minutesSince(c.registered_at) ?? 0;
     if (waited > thresholds.hr_wait_threshold_minutes) return alertBadgeHtml("waiting", `Waiting ${waited}m`);
@@ -158,7 +172,7 @@ export function statusBadgeFor(c, thresholds) {
     if (elapsed > thresholds.interview_duration_threshold_minutes)
       return alertBadgeHtml("interview", `In cabin ${elapsed}m`);
   }
-  return alertBadgeHtml("ok", "On track");
+  return alertBadgeHtml("ok", "IN TRANSIT / WAITING");
 }
 
 // ---- Export helpers (mirrors src/lib/export.ts, uses global XLSX from CDN) ----
