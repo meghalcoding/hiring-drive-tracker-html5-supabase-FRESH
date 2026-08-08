@@ -142,82 +142,23 @@ export function isHoldDecision(c) {
   return c.stage === "loi" && c.interview_recommendation === "hold";
 }
 
-// Mirrors statusBadgeFor() from src/pages/Dashboard.tsx
-export function statusBadgeFor(c, thresholds) {
-  if (c.stage === "completed") return alertBadgeHtml("completed", "Completed");
-  if (isHoldDecision(c)) return alertBadgeHtml("hold", "Hold — Cabin decision");
-  if (c.stage === "reception" && (!c.resume_received || !c.registration_complete)) {
-    return alertBadgeHtml("incomplete", "Incomplete fields");
-  }
-  if (c.stage === "hr_screening" && !c.hr_started_at && thresholds) {
-    const waited = minutesSince(c.registered_at) ?? 0;
-    if (waited > thresholds.hr_wait_threshold_minutes) return alertBadgeHtml("waiting", `Waiting ${waited}m`);
-  }
-  if (["cabin_1", "cabin_2", "cabin_3", "cabin_4"].includes(c.stage) && c.cabin_started_at && thresholds) {
-    const elapsed = minutesSince(c.cabin_started_at) ?? 0;
-    if (elapsed > thresholds.interview_duration_threshold_minutes)
-      return alertBadgeHtml("interview", `In cabin ${elapsed}m`);
-  }
-  return alertBadgeHtml("ok", "On track");
+// True while an HR screening or Cabin interview is actively in progress for this
+// candidate (i.e. "Start Screening" / "Start Interview" was clicked and not yet
+// finished or cancelled). Used to flag the candidate currently in the room.
+export function isHrScreeningActive(c) {
+  return c.stage === "hr_screening" && !!c.hr_started_at;
 }
 
-// ---- Export helpers (mirrors src/lib/export.ts, uses global XLSX from CDN) ----
-
-function toRow(c) {
-  return {
-    "Candidate Code": c.candidate_code,
-    "Full Name": c.full_name,
-    Phone: c.phone,
-    Email: c.email ?? "",
-    "Position Applied": c.position_applied,
-    "Experience (yrs)": c.experience_years,
-    Stage: STAGE_LABELS[c.stage] || c.stage,
-    "Resume Received": c.resume_received ? "Yes" : "No",
-    "Registration Complete": c.registration_complete ? "Yes" : "No",
-    "HR Feedback": c.hr_feedback ?? "",
-    "HR Interviewer": c.hr_interviewer ?? "",
-    "HR Started": c.hr_started_at ?? "",
-    "HR Completed": c.hr_completed_at ?? "",
-    "Cabin Number": c.cabin_number ?? "",
-    "Cabin Started": c.cabin_started_at ?? "",
-    "Cabin Completed": c.cabin_completed_at ?? "",
-    "Interview Rating": c.interview_rating ?? "",
-    "Interview Recommendation": c.interview_recommendation ?? "",
-    "Interview Comments": c.interview_comments ?? "",
-    "LOI Issued": c.loi_issued ? "Yes" : "No",
-    "Aadhaar Received": c.aadhaar_received ? "Yes" : "No",
-    "Exit Time": c.exit_time ?? "",
-    "Rejected At Stage": c.rejected_at_stage ? (STAGE_LABELS[c.rejected_at_stage] || c.rejected_at_stage) : "",
-    "Rejection Reason": c.rejection_reason ?? "",
-    "Registered At": c.registered_at,
-    "Completed At": c.completed_at ?? "",
-  };
+export function isCabinInterviewActive(c) {
+  return ["cabin_1", "cabin_2", "cabin_3", "cabin_4"].includes(c.stage) && !!c.cabin_started_at;
 }
 
-function filename(ext) {
-  const ts = new Date().toISOString().replace(/[:.]/g, "-");
-  return `candidates-export-${ts}.${ext}`;
+// Extra CSS class to visually flag the queue-item row for a candidate currently
+// in an active HR screening or Cabin interview. Returns "" otherwise.
+export function activeFlagClass(c) {
+  if (isHrScreeningActive(c)) return "hr-active-flag";
+  if (isCabinInterviewActive(c)) return "cabin-active-flag";
+  return "";
 }
 
-export function exportToXlsx(candidates) {
-  const rows = candidates.map(toRow);
-  const ws = XLSX.utils.json_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Candidates");
-  XLSX.writeFile(wb, filename("xlsx"));
-}
-
-export function exportToCsv(candidates) {
-  const rows = candidates.map(toRow);
-  const ws = XLSX.utils.json_to_sheet(rows);
-  const csv = XLSX.utils.sheet_to_csv(ws);
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename("csv");
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
+// Mirrors statusBadgeFor() from

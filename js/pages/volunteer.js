@@ -8,6 +8,7 @@ import {
   isHoldDecision,
   volunteerNameFor,
   volunteerNameForSlot,
+  activeFlagClass,
 } from "../lib.js";
 
 export function renderVolunteer(root) {
@@ -33,7 +34,7 @@ export function renderVolunteer(root) {
       ? `<ul class="queue-list">${queue
           .map(
             (c) => `
-              <li class="queue-item ${isHoldDecision(c) ? "hold-flag" : ""}" style="cursor:default;">
+              <li class="queue-item ${isHoldDecision(c) ? "hold-flag" : ""} ${activeFlagClass(c)}" style="cursor:default;">
                 <p class="queue-item-name">${escapeHtml(c.full_name)}</p>
                 <p class="queue-item-meta">${escapeHtml(c.candidate_code)} · ${formatTime(c.registered_at)}</p>
                 <div style="margin-top:.25rem;">${statusBadgeFor(c, settings)}</div>

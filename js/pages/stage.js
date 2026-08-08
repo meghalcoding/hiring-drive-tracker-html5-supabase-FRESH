@@ -1,6 +1,6 @@
 import { supabase } from "../supabaseClient.js";
 import { authStore, candidatesStore, settingsStore } from "../store.js";
-import { STAGE_LABELS, stageBadgeHtml, statusBadgeFor, formatTime, formatDateTime, escapeHtml, isHoldDecision } from "../lib.js";
+import { STAGE_LABELS, stageBadgeHtml, statusBadgeFor, formatTime, formatDateTime, escapeHtml, isHoldDecision, activeFlagClass, alertBadgeHtml } from "../lib.js";
 
 const HR_NAMES = ["Rushi", "Nirali"];
 
@@ -80,7 +80,7 @@ export function renderStage(root, stage) {
         ${queue
           .map(
             (c) => `
-            <li class="queue-item ${selected && selected.id === c.id ? "selected" : ""} ${isHoldDecision(c) ? "hold-flag" : ""}" data-id="${c.id}">
+            <li class="queue-item ${selected && selected.id === c.id ? "selected" : ""} ${isHoldDecision(c) ? "hold-flag" : ""} ${activeFlagClass(c)}" data-id="${c.id}">
               <div class="row-between">
                 <div>
                   <p class="queue-item-name">${escapeHtml(c.full_name)}<span class="queue-item-code">${escapeHtml(c.candidate_code)}</span></p>
@@ -397,10 +397,14 @@ function mountHrPanel(el, candidate, onDone) {
 
   el.innerHTML = `
     <div class="stack-sm">
-      <div>
-        <p class="small" style="font-weight:500; color:var(--gray-800);">${escapeHtml(candidate.full_name)}</p>
-        <p class="small muted">${escapeHtml(candidate.position_applied)} · ${candidate.experience_years}yrs exp${isExperienced ? "" : " (fresher — Cabin 4 not eligible)"}</p>
+      <div class="row-between" style="align-items:flex-start;">
+        <div>
+          <p class="small" style="font-weight:500; color:var(--gray-800);">${escapeHtml(candidate.full_name)}</p>
+          <p class="small muted">${escapeHtml(candidate.position_applied)} · ${candidate.experience_years}yrs exp${isExperienced ? "" : " (fresher — Cabin 4 not eligible)"}</p>
+        </div>
+        <button id="hr-cancel" class="btn-cancel-flag" title="Cancel this screening if it was started by mistake">Cancel Screening</button>
       </div>
+      <div>${alertBadgeHtml("hr-active", "HR SCREENING ACTIVE")}</div>
       <div>
         <label class="field-label">HR Name</label>
         <select id="hr-name" class="input">
@@ -433,6 +437,23 @@ function mountHrPanel(el, candidate, onDone) {
   const cabinSel = document.getElementById("hr-cabin");
   const assignBtn = document.getElementById("hr-assign");
   const rejectBtn = document.getElementById("hr-reject");
+  const cancelBtn = document.getElementById("hr-cancel");
+
+  cancelBtn.addEventListener("click", async () => {
+    if (!confirm("Cancel this HR screening? The candidate will go back to the queue as \"In Transit / Waiting\".")) return;
+    cancelBtn.disabled = true;
+    const { error } = await supabase
+      .from("candidates")
+      .update({ hr_started_at: null })
+      .eq("id", candidate.id);
+    cancelBtn.disabled = false;
+    if (error) {
+      alert(error.message);
+    } else {
+      candidate.hr_started_at = null;
+      mountHrPanel(el, candidate, onDone);
+    }
+  });
 
   function buildHistory(rejected) {
     const prior = candidate.comments_history ?? "";
@@ -538,10 +559,14 @@ function mountCabinPanel(el, candidate, onDone) {
 
   el.innerHTML = `
     <div class="stack-sm">
-      <div>
-        <p class="small" style="font-weight:500; color:var(--gray-800);">${escapeHtml(candidate.full_name)}</p>
-        <p class="small muted">${escapeHtml(candidate.position_applied)} · ${candidate.experience_years}yrs exp</p>
+      <div class="row-between" style="align-items:flex-start;">
+        <div>
+          <p class="small" style="font-weight:500; color:var(--gray-800);">${escapeHtml(candidate.full_name)}</p>
+          <p class="small muted">${escapeHtml(candidate.position_applied)} · ${candidate.experience_years}yrs exp</p>
+        </div>
+        <button id="cb-cancel" class="btn-cancel-flag" title="Cancel this interview if it was started by mistake">Cancel Interview</button>
       </div>
+      <div>${alertBadgeHtml("cabin-active", "CABIN INTERVIEW ACTIVE")}</div>
       ${
         candidate.hr_feedback
           ? `<div class="note-box"><p class="note-box-label">HR Screening Comments</p><p class="note-box-body">${escapeHtml(candidate.hr_feedback)}</p></div>`
@@ -575,6 +600,23 @@ function mountCabinPanel(el, candidate, onDone) {
   const recSel = document.getElementById("cb-rec");
   const errorEl = document.getElementById("cb-error");
   const finishBtn = document.getElementById("cb-finish");
+  const cancelBtn = document.getElementById("cb-cancel");
+
+  cancelBtn.addEventListener("click", async () => {
+    if (!confirm("Cancel this Cabin interview? The candidate will go back to the queue as \"In Transit / Waiting\".")) return;
+    cancelBtn.disabled = true;
+    const { error } = await supabase
+      .from("candidates")
+      .update({ cabin_started_at: null })
+      .eq("id", candidate.id);
+    cancelBtn.disabled = false;
+    if (error) {
+      alert(error.message);
+    } else {
+      candidate.cabin_started_at = null;
+      mountCabinPanel(el, candidate, onDone);
+    }
+  });
 
   ratingInput.addEventListener("input", () => {
     ratingValue.textContent = `${ratingInput.value} / 5`;

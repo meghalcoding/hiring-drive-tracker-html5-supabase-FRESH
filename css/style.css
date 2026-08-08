@@ -1,4 +1,3 @@
-
 /* ============================================================
    Hiring Drive Tracker — Flat Design System
    ============================================================ */
@@ -205,6 +204,22 @@ select:focus-visible, textarea:focus-visible, .queue-item:focus-visible {
 .badge-completed { background: #D1FAE5; color: #047857; }
 .badge-ok { background: var(--gray-200); color: var(--gray-600); }
 .badge-hold { background: #FEF3C7; color: #92400E; font-weight: 700; }
+.badge-hr-active { background: #DBEAFE; color: #1D4ED8; font-weight: 700; }
+.badge-cabin-active { background: #EDE9FE; color: #6D28D9; font-weight: 700; }
+.badge-hr-active, .badge-cabin-active { animation: badge-pulse 1.4s ease-in-out infinite; }
+@keyframes badge-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .55; }
+}
+
+/* Cancel button for active HR screening / Cabin interview panels */
+.btn-cancel-flag {
+  background: transparent; color: #B91C1C; border: 1.5px solid #FCA5A5; border-radius: var(--radius-pill);
+  padding: .3rem .75rem; font-size: .72rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: var(--transition);
+}
+.btn-cancel-flag:hover:not(:disabled) { background: #FEF2F2; }
+.btn-cancel-flag:disabled { opacity: .5; cursor: default; }
  
 /* Grids */
 .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .85rem; }
@@ -266,6 +281,8 @@ tbody tr:hover { background: var(--muted); }
 .queue-item:hover { background: #EFF6FF; transform: scale(1.01); }
 .queue-item.selected { border-color: var(--primary); background: #EFF6FF; }
 .queue-item.hold-flag { border-left: 4px solid var(--accent); background: #FFFBEB; }
+.queue-item.hr-active-flag { border-left: 4px solid #2563EB; background: #EFF6FF; }
+.queue-item.cabin-active-flag { border-left: 4px solid #7C3AED; background: #F5F3FF; }
 .queue-item-name { font-weight: 700; color: var(--gray-800); margin: 0; }
 .queue-item-code { font-family: monospace; font-size: .7rem; color: var(--gray-400); margin-left: .3rem; }
 .queue-item-meta { font-size: .75rem; color: var(--gray-500); margin: .15rem 0 0; }
